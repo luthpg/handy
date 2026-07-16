@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  api-server:
+    # あなたのGitHubユーザー名/リポジトリ名に合わせて自動変換されます
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/handy:main
+    ports:
+      - "3000:3000"
+    volumes:
+      # OCI上の workspace フォルダをコンテナ内の作業ディレクトリにマウント
+      - ./workspace:/app/artifacts/api-server/user-workspace
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    restart: always
+
+  node-ide:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/node-ide-frontend:main
+    ports:
+      - "80:80" # ブラウザからポート80で直接アクセス
+    restart: always
