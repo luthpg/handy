@@ -10,11 +10,8 @@ export interface HealthStatus {
 }
 
 export interface FileEntry {
-  /** Relative file path (e.g. "src/index.js") */
   path: string;
-  /** File name */
   name: string;
-  /** File size in bytes */
   size: number;
   updatedAt: string;
 }
@@ -25,9 +22,7 @@ export interface FileContent {
 }
 
 export interface FileInput {
-  /** Relative path for the new file (e.g. "hello.js") */
   path: string;
-  /** Initial content */
   content?: string;
 }
 
@@ -36,7 +31,6 @@ export interface FileUpdate {
 }
 
 export interface RenameInput {
-  /** New relative path */
   newPath: string;
 }
 
@@ -46,9 +40,7 @@ export interface DeleteResult {
 }
 
 export interface ExecuteInput {
-  /** Path of file to run */
   filePath: string;
-  /** Optional stdin input */
   stdin?: string;
 }
 
@@ -57,5 +49,42 @@ export interface ExecuteResult {
   stderr: string;
   exitCode: number;
   durationMs: number;
+}
+
+export interface TsCompletionInput {
+  filePath: string;
+  content: string;
+  /** Character offset from start of file */
+  position: number;
+}
+
+export interface TsCompletionItem {
+  label: string;
+  kind: string;
+  sortText: string;
+  /** @nullable */
+  detail?: string | null;
+  /** @nullable */
+  documentation?: string | null;
+}
+
+export interface TsCompletionResult {
+  items: TsCompletionItem[];
+}
+
+export interface TsDiagnosticInput {
+  filePath: string;
+  content: string;
+}
+
+export interface TsDiagnosticItem {
+  from: number;
+  to: number;
+  severity: string;
+  message: string;
+}
+
+export interface TsDiagnosticResult {
+  items: TsDiagnosticItem[];
 }
 

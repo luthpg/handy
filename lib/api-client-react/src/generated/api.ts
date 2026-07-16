@@ -28,7 +28,11 @@ import type {
   FileInput,
   FileUpdate,
   HealthStatus,
-  RenameInput
+  RenameInput,
+  TsCompletionInput,
+  TsCompletionResult,
+  TsDiagnosticInput,
+  TsDiagnosticResult
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -144,7 +148,7 @@ export const getListFilesUrl = () => {
 }
 
 /**
- * @summary List all files (flat list with paths)
+ * @summary List all files
  */
 export const listFiles = async ( options?: RequestInit): Promise<FileEntry[]> => {
 
@@ -191,7 +195,7 @@ export type ListFilesQueryError = ErrorType<unknown>
 
 
 /**
- * @summary List all files (flat list with paths)
+ * @summary List all files
  */
 
 export function useListFiles<TData = Awaited<ReturnType<typeof listFiles>>, TError = ErrorType<unknown>>(
@@ -512,7 +516,7 @@ export const getRenameFileUrl = (filePath: string,) => {
 }
 
 /**
- * @summary Rename or move a file
+ * @summary Rename a file
  */
 export const renameFile = async (filePath: string,
     renameInput: RenameInput, options?: RequestInit): Promise<FileEntry> => {
@@ -562,7 +566,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type RenameFileMutationError = ErrorType<void>
 
     /**
- * @summary Rename or move a file
+ * @summary Rename a file
  */
 export const useRenameFile = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameFile>>, TError,{filePath: string;data: BodyType<RenameInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -644,5 +648,147 @@ export const useExecuteCode = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getExecuteCodeMutationOptions(options));
+    }
+
+export const getGetTsCompletionsUrl = () => {
+
+
+
+
+  return `/api/ts/completions`
+}
+
+/**
+ * @summary Get TypeScript completions at a cursor position
+ */
+export const getTsCompletions = async (tsCompletionInput: TsCompletionInput, options?: RequestInit): Promise<TsCompletionResult> => {
+
+  return customFetch<TsCompletionResult>(getGetTsCompletionsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(tsCompletionInput)
+  }
+);}
+
+
+
+
+
+export const getGetTsCompletionsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getTsCompletions>>, TError,{data: BodyType<TsCompletionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof getTsCompletions>>, TError,{data: BodyType<TsCompletionInput>}, TContext> => {
+
+const mutationKey = ['getTsCompletions'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getTsCompletions>>, {data: BodyType<TsCompletionInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  getTsCompletions(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetTsCompletionsMutationResult = NonNullable<Awaited<ReturnType<typeof getTsCompletions>>>
+    export type GetTsCompletionsMutationBody = BodyType<TsCompletionInput>
+    export type GetTsCompletionsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Get TypeScript completions at a cursor position
+ */
+export const useGetTsCompletions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getTsCompletions>>, TError,{data: BodyType<TsCompletionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof getTsCompletions>>,
+        TError,
+        {data: BodyType<TsCompletionInput>},
+        TContext
+      > => {
+      return useMutation(getGetTsCompletionsMutationOptions(options));
+    }
+
+export const getGetTsDiagnosticsUrl = () => {
+
+
+
+
+  return `/api/ts/diagnostics`
+}
+
+/**
+ * @summary Get TypeScript diagnostics for a file
+ */
+export const getTsDiagnostics = async (tsDiagnosticInput: TsDiagnosticInput, options?: RequestInit): Promise<TsDiagnosticResult> => {
+
+  return customFetch<TsDiagnosticResult>(getGetTsDiagnosticsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(tsDiagnosticInput)
+  }
+);}
+
+
+
+
+
+export const getGetTsDiagnosticsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getTsDiagnostics>>, TError,{data: BodyType<TsDiagnosticInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof getTsDiagnostics>>, TError,{data: BodyType<TsDiagnosticInput>}, TContext> => {
+
+const mutationKey = ['getTsDiagnostics'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getTsDiagnostics>>, {data: BodyType<TsDiagnosticInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  getTsDiagnostics(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetTsDiagnosticsMutationResult = NonNullable<Awaited<ReturnType<typeof getTsDiagnostics>>>
+    export type GetTsDiagnosticsMutationBody = BodyType<TsDiagnosticInput>
+    export type GetTsDiagnosticsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Get TypeScript diagnostics for a file
+ */
+export const useGetTsDiagnostics = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getTsDiagnostics>>, TError,{data: BodyType<TsDiagnosticInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof getTsDiagnostics>>,
+        TError,
+        {data: BodyType<TsDiagnosticInput>},
+        TContext
+      > => {
+      return useMutation(getGetTsDiagnosticsMutationOptions(options));
     }
 

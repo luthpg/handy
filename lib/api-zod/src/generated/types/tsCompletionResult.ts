@@ -5,10 +5,8 @@
  * Node.js IDE API
  * OpenAPI spec version: 0.1.0
  */
+import type { TsCompletionItem } from './tsCompletionItem';
 
-export interface FileEntry {
-  path: string;
-  name: string;
-  size: number;
-  updatedAt: Date;
+export interface TsCompletionResult {
+  items: TsCompletionItem[];
 }

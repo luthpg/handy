@@ -7,8 +7,6 @@
  */
 
 export interface FileInput {
-  /** Relative path for the new file (e.g. "hello.js") */
   path: string;
-  /** Initial content */
   content?: string;
 }

@@ -17,12 +17,12 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
- * @summary List all files (flat list with paths)
+ * @summary List all files
  */
 export const ListFilesResponseItem = zod.object({
-  "path": zod.string().describe('Relative file path (e.g. \"src\/index.js\")'),
-  "name": zod.string().describe('File name'),
-  "size": zod.number().describe('File size in bytes'),
+  "path": zod.string(),
+  "name": zod.string(),
+  "size": zod.number(),
   "updatedAt": zod.coerce.date()
 })
 export const ListFilesResponse = zod.array(ListFilesResponseItem)
@@ -32,14 +32,14 @@ export const ListFilesResponse = zod.array(ListFilesResponseItem)
  * @summary Create a new file
  */
 export const CreateFileBody = zod.object({
-  "path": zod.string().describe('Relative path for the new file (e.g. \"hello.js\")'),
-  "content": zod.string().optional().describe('Initial content')
+  "path": zod.string(),
+  "content": zod.string().optional()
 })
 
 export const CreateFileResponse = zod.object({
-  "path": zod.string().describe('Relative file path (e.g. \"src\/index.js\")'),
-  "name": zod.string().describe('File name'),
-  "size": zod.number().describe('File size in bytes'),
+  "path": zod.string(),
+  "name": zod.string(),
+  "size": zod.number(),
   "updatedAt": zod.coerce.date()
 })
 
@@ -69,9 +69,9 @@ export const UpdateFileBody = zod.object({
 })
 
 export const UpdateFileResponse = zod.object({
-  "path": zod.string().describe('Relative file path (e.g. \"src\/index.js\")'),
-  "name": zod.string().describe('File name'),
-  "size": zod.number().describe('File size in bytes'),
+  "path": zod.string(),
+  "name": zod.string(),
+  "size": zod.number(),
   "updatedAt": zod.coerce.date()
 })
 
@@ -90,20 +90,20 @@ export const DeleteFileResponse = zod.object({
 
 
 /**
- * @summary Rename or move a file
+ * @summary Rename a file
  */
 export const RenameFileParams = zod.object({
   "filePath": zod.coerce.string()
 })
 
 export const RenameFileBody = zod.object({
-  "newPath": zod.string().describe('New relative path')
+  "newPath": zod.string()
 })
 
 export const RenameFileResponse = zod.object({
-  "path": zod.string().describe('Relative file path (e.g. \"src\/index.js\")'),
-  "name": zod.string().describe('File name'),
-  "size": zod.number().describe('File size in bytes'),
+  "path": zod.string(),
+  "name": zod.string(),
+  "size": zod.number(),
   "updatedAt": zod.coerce.date()
 })
 
@@ -112,8 +112,8 @@ export const RenameFileResponse = zod.object({
  * @summary Execute a Node.js file and return output
  */
 export const ExecuteCodeBody = zod.object({
-  "filePath": zod.string().describe('Path of file to run'),
-  "stdin": zod.string().optional().describe('Optional stdin input')
+  "filePath": zod.string(),
+  "stdin": zod.string().optional()
 })
 
 export const ExecuteCodeResponse = zod.object({
@@ -121,6 +121,44 @@ export const ExecuteCodeResponse = zod.object({
   "stderr": zod.string(),
   "exitCode": zod.number(),
   "durationMs": zod.number()
+})
+
+
+/**
+ * @summary Get TypeScript completions at a cursor position
+ */
+export const GetTsCompletionsBody = zod.object({
+  "filePath": zod.string(),
+  "content": zod.string(),
+  "position": zod.number().describe('Character offset from start of file')
+})
+
+export const GetTsCompletionsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "label": zod.string(),
+  "kind": zod.string(),
+  "sortText": zod.string(),
+  "detail": zod.string().nullish(),
+  "documentation": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary Get TypeScript diagnostics for a file
+ */
+export const GetTsDiagnosticsBody = zod.object({
+  "filePath": zod.string(),
+  "content": zod.string()
+})
+
+export const GetTsDiagnosticsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "from": zod.number(),
+  "to": zod.number(),
+  "severity": zod.string(),
+  "message": zod.string()
+}))
 })
 
 

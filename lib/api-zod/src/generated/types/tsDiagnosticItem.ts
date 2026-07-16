@@ -6,9 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface FileEntry {
-  path: string;
-  name: string;
-  size: number;
-  updatedAt: Date;
+export interface TsDiagnosticItem {
+  from: number;
+  to: number;
+  severity: string;
+  message: string;
 }

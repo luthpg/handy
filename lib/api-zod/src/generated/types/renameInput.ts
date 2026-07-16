@@ -7,6 +7,5 @@
  */
 
 export interface RenameInput {
-  /** New relative path */
   newPath: string;
 }

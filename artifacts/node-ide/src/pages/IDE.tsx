@@ -2,8 +2,9 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { javascript } from '@codemirror/lang-javascript';
 import { oneDark } from '@codemirror/theme-one-dark';
+import { createTsExtensions } from '@/lib/tsIntellisense';
 import { Play, Trash2, Edit2, Terminal, Menu, X, File as FileIcon, FilePlus, Check } from 'lucide-react';
-import { useListFiles, getListFilesQueryKey, useReadFile, useCreateFile, useUpdateFile, useDeleteFile, useRenameFile, useExecuteCode } from '@workspace/api-client-react';
+import { useListFiles, getListFilesQueryKey, useReadFile, getReadFileQueryKey, useCreateFile, useUpdateFile, useDeleteFile, useRenameFile, useExecuteCode } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 
 export function IDE() {
@@ -320,13 +321,31 @@ function EditorPanel({ filePath }: { filePath: string }) {
   const updateFile = useUpdateFile();
   
   const { data: fileData, isLoading } = useReadFile(filePath, { 
-    query: { enabled: !!filePath } 
+    query: { enabled: !!filePath, queryKey: getReadFileQueryKey(filePath) } 
   });
   
   const [content, setContent] = useState("");
   const contentRef = useRef(content);
   const fileRef = useRef(filePath);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Keep a stable ref to current filePath so the TS extensions don't go stale
+  const filePathRef = useRef(filePath);
+  useEffect(() => { filePathRef.current = filePath; }, [filePath]);
+
+  // Build extensions once; the getter closure keeps filePath current
+  const tsExtensions = useMemo(
+    () => createTsExtensions(() => filePathRef.current),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  const isTypeScript = filePath.endsWith('.ts') || filePath.endsWith('.tsx');
+  const hasJsx = filePath.endsWith('.tsx') || filePath.endsWith('.jsx');
+  const langExt = useMemo(
+    () => javascript({ typescript: isTypeScript || true, jsx: hasJsx }),
+    [isTypeScript, hasJsx],
+  );
 
   // Load content when file changes
   useEffect(() => {
@@ -335,13 +354,12 @@ function EditorPanel({ filePath }: { filePath: string }) {
       contentRef.current = fileData.content;
       fileRef.current = filePath;
     } else if (fileData && !contentRef.current && fileData.content) {
-      // First load for same file
       setContent(fileData.content);
       contentRef.current = fileData.content;
     }
   }, [fileData, filePath]);
 
-  // Reset fileRef when filePath prop changes so we load the new file data
+  // Reset when filePath changes so new file data loads
   useEffect(() => {
     fileRef.current = ""; 
     setContent("");
@@ -350,17 +368,13 @@ function EditorPanel({ filePath }: { filePath: string }) {
   const onChange = useCallback((val: string) => {
     setContent(val);
     
-    // Auto-save debounce
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     
     saveTimeoutRef.current = setTimeout(() => {
       if (val !== contentRef.current) {
         updateFile.mutate({ filePath, data: { content: val } }, {
           onSuccess: () => {
             contentRef.current = val;
-            // Patch local cache so we don't trigger a refetch that might overwrite
             queryClient.setQueryData([`/api/files/${filePath}`], { path: filePath, content: val });
           }
         });
@@ -377,7 +391,7 @@ function EditorPanel({ filePath }: { filePath: string }) {
       <CodeMirror
         value={content}
         height="100%"
-        extensions={[javascript()]}
+        extensions={[langExt, ...tsExtensions]}
         theme={oneDark}
         onChange={onChange}
         className="h-full cm-editor-wrapper absolute inset-0"
@@ -390,7 +404,7 @@ function EditorPanel({ filePath }: { filePath: string }) {
           indentOnInput: true,
           bracketMatching: true,
           closeBrackets: true,
-          autocompletion: true,
+          autocompletion: false,   // disabled — we provide our own TS-backed autocomplete
           highlightActiveLine: true,
           highlightSelectionMatches: true,
           tabSize: 2,

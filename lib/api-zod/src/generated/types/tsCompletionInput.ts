@@ -6,7 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface ExecuteInput {
+export interface TsCompletionInput {
   filePath: string;
-  stdin?: string;
+  content: string;
+  /** Character offset from start of file */
+  position: number;
 }

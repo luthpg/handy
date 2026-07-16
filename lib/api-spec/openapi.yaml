@@ -14,6 +14,8 @@ tags:
     description: File management
   - name: execute
     description: Code execution
+  - name: typescript
+    description: TypeScript language services
 paths:
   /healthz:
     get:
@@ -32,7 +34,7 @@ paths:
     get:
       operationId: listFiles
       tags: [files]
-      summary: List all files (flat list with paths)
+      summary: List all files
       responses:
         "200":
           description: File list
@@ -131,7 +133,7 @@ paths:
     post:
       operationId: renameFile
       tags: [files]
-      summary: Rename or move a file
+      summary: Rename a file
       parameters:
         - name: filePath
           in: path
@@ -175,6 +177,44 @@ paths:
               schema:
                 $ref: "#/components/schemas/ExecuteResult"
 
+  /ts/completions:
+    post:
+      operationId: getTsCompletions
+      tags: [typescript]
+      summary: Get TypeScript completions at a cursor position
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TsCompletionInput"
+      responses:
+        "200":
+          description: Completion items
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TsCompletionResult"
+
+  /ts/diagnostics:
+    post:
+      operationId: getTsDiagnostics
+      tags: [typescript]
+      summary: Get TypeScript diagnostics for a file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TsDiagnosticInput"
+      responses:
+        "200":
+          description: Diagnostics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TsDiagnosticResult"
+
 components:
   schemas:
     HealthStatus:
@@ -190,13 +230,10 @@ components:
       properties:
         path:
           type: string
-          description: Relative file path (e.g. "src/index.js")
         name:
           type: string
-          description: File name
         size:
           type: integer
-          description: File size in bytes
         updatedAt:
           type: string
           format: date-time
@@ -222,10 +259,8 @@ components:
       properties:
         path:
           type: string
-          description: Relative path for the new file (e.g. "hello.js")
         content:
           type: string
-          description: Initial content
       required:
         - path
 
@@ -242,7 +277,6 @@ components:
       properties:
         newPath:
           type: string
-          description: New relative path
       required:
         - newPath
 
@@ -262,10 +296,8 @@ components:
       properties:
         filePath:
           type: string
-          description: Path of file to run
         stdin:
           type: string
-          description: Optional stdin input
       required:
         - filePath
 
@@ -285,3 +317,84 @@ components:
         - stderr
         - exitCode
         - durationMs
+
+    TsCompletionInput:
+      type: object
+      properties:
+        filePath:
+          type: string
+        content:
+          type: string
+        position:
+          type: integer
+          description: Character offset from start of file
+      required:
+        - filePath
+        - content
+        - position
+
+    TsCompletionItem:
+      type: object
+      properties:
+        label:
+          type: string
+        kind:
+          type: string
+        sortText:
+          type: string
+        detail:
+          type: ["string", "null"]
+        documentation:
+          type: ["string", "null"]
+      required:
+        - label
+        - kind
+        - sortText
+
+    TsCompletionResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TsCompletionItem"
+      required:
+        - items
+
+    TsDiagnosticInput:
+      type: object
+      properties:
+        filePath:
+          type: string
+        content:
+          type: string
+      required:
+        - filePath
+        - content
+
+    TsDiagnosticItem:
+      type: object
+      properties:
+        from:
+          type: integer
+        to:
+          type: integer
+        severity:
+          type: string
+        message:
+          type: string
+      required:
+        - from
+        - to
+        - severity
+        - message
+
+    TsDiagnosticResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TsDiagnosticItem"
+      required:
+        - items
