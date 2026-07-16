@@ -30,6 +30,8 @@ async function buildAll() {
     external: [
       "*.node",
       "typescript", // TypeScript LS reads .d.ts files from disk — must not be bundled
+      "node-pty",
+      "node-pty-prebuilt-multiarch", // native module — must not be bundled
       "sharp",
       "better-sqlite3",
       "sqlite3",

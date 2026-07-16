@@ -4,14 +4,16 @@ import { javascript } from '@codemirror/lang-javascript';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { createTsExtensions } from '@/lib/tsIntellisense';
 import { Play, Trash2, Edit2, Terminal, Menu, X, File as FileIcon, FilePlus, Check } from 'lucide-react';
-import { useListFiles, getListFilesQueryKey, useReadFile, getReadFileQueryKey, useCreateFile, useUpdateFile, useDeleteFile, useRenameFile, useExecuteCode } from '@workspace/api-client-react';
+import { useListFiles, getListFilesQueryKey, useReadFile, getReadFileQueryKey, useCreateFile, useUpdateFile, useDeleteFile, useRenameFile } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
+import XTerminal, { type XTerminalHandle } from '@/components/XTerminal';
 
 export function IDE() {
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [outputHeight, setOutputHeight] = useState(250); // pixels
-  const [isOutputVisible, setIsOutputVisible] = useState(true);
+  const [terminalHeight, setTerminalHeight] = useState(240);
+  const [isTerminalVisible, setIsTerminalVisible] = useState(true);
+  const terminalRef = useRef<XTerminalHandle>(null);
   
   const queryClient = useQueryClient();
   
@@ -55,8 +57,14 @@ export function IDE() {
         </div>
         
         <div className="flex items-center gap-2">
-          {activeFile && activeFile.endsWith('.js') && (
-            <RunButton filePath={activeFile} onOutput={() => setIsOutputVisible(true)} />
+          {activeFile && (activeFile.endsWith('.js') || activeFile.endsWith('.ts')) && (
+            <RunButton
+              filePath={activeFile}
+              onRun={(cmd) => {
+                setIsTerminalVisible(true);
+                terminalRef.current?.send(cmd);
+              }}
+            />
           )}
         </div>
       </header>
@@ -119,62 +127,62 @@ export function IDE() {
             </div>
           )}
 
-          {/* Output Panel (Bottom Sheet) */}
-          <div 
-            className={`border-t border-border bg-card flex flex-col shrink-0 transition-all duration-300 ease-in-out z-10 relative
-              ${isOutputVisible ? 'translate-y-0' : 'translate-y-full absolute bottom-0 w-full'}`}
-            style={{ height: isOutputVisible ? outputHeight : 0, display: isOutputVisible || outputHeight > 0 ? 'flex' : 'none' }}
+          {/* Terminal Panel (Bottom) */}
+          <div
+            className="border-t border-border flex flex-col shrink-0 relative"
+            style={{ height: isTerminalVisible ? terminalHeight : 0 }}
           >
-            {isOutputVisible && (
+            {isTerminalVisible && (
               <>
-                <div 
-                  className="h-1 absolute top-0 left-0 right-0 cursor-row-resize hover:bg-primary/50 z-10"
+                {/* Resize handle */}
+                <div
+                  className="h-1 absolute top-0 left-0 right-0 cursor-row-resize hover:bg-primary/40 active:bg-primary/60 z-10"
                   onPointerDown={(e) => {
+                    e.currentTarget.setPointerCapture(e.pointerId);
                     const startY = e.clientY;
-                    const startHeight = outputHeight;
-                    
-                    const onPointerMove = (moveEvent: PointerEvent) => {
-                      const deltaY = startY - moveEvent.clientY;
-                      const newHeight = Math.max(100, Math.min(window.innerHeight * 0.8, startHeight + deltaY));
-                      setOutputHeight(newHeight);
+                    const startH = terminalHeight;
+                    const onMove = (mv: PointerEvent) => {
+                      const newH = Math.max(80, Math.min(window.innerHeight * 0.85, startH - (mv.clientY - startY)));
+                      setTerminalHeight(newH);
                     };
-                    
-                    const onPointerUp = () => {
-                      document.removeEventListener('pointermove', onPointerMove);
-                      document.removeEventListener('pointerup', onPointerUp);
+                    const onUp = () => {
+                      document.removeEventListener('pointermove', onMove);
+                      document.removeEventListener('pointerup', onUp);
                     };
-                    
-                    document.addEventListener('pointermove', onPointerMove);
-                    document.addEventListener('pointerup', onPointerUp);
+                    document.addEventListener('pointermove', onMove);
+                    document.addEventListener('pointerup', onUp);
                   }}
                 />
-                <div className="h-9 px-3 flex items-center justify-between border-b border-border bg-muted/30 shrink-0 select-none">
-                  <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    <Terminal size={14} />
-                    <span>Output</span>
+                {/* Tab bar */}
+                <div className="h-8 px-3 flex items-center justify-between border-b border-border bg-[#1a1a1a] shrink-0 select-none">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <Terminal size={13} />
+                    <span>Terminal</span>
                   </div>
-                  <button 
-                    onClick={() => setIsOutputVisible(false)}
+                  <button
+                    onClick={() => setIsTerminalVisible(false)}
                     className="p-1 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors"
+                    title="Hide terminal"
                   >
-                    <X size={14} />
+                    <X size={13} />
                   </button>
                 </div>
-                <div className="flex-1 overflow-auto p-3 text-[13px] font-mono bg-[#0a0a0a]" id="terminal-output">
-                  <div className="text-muted-foreground italic mb-2">// Run a file to see output here</div>
+                {/* xterm.js mount point */}
+                <div className="flex-1 overflow-hidden bg-[#0a0a0a]">
+                  <XTerminal ref={terminalRef} className="w-full h-full" />
                 </div>
               </>
             )}
           </div>
-          
-          {/* Show Output Button when hidden */}
-          {!isOutputVisible && (
-            <button 
-              onClick={() => setIsOutputVisible(true)}
+
+          {/* Floating button to reopen terminal */}
+          {!isTerminalVisible && (
+            <button
+              onClick={() => setIsTerminalVisible(true)}
               className="absolute bottom-4 right-4 bg-secondary border border-border text-foreground px-3 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm font-medium z-20 hover:bg-muted transition-colors"
             >
-              <Terminal size={16} />
-              <span>Show Output</span>
+              <Terminal size={15} />
+              <span>Terminal</span>
             </button>
           )}
         </div>
@@ -414,52 +422,21 @@ function EditorPanel({ filePath }: { filePath: string }) {
   );
 }
 
-function RunButton({ filePath, onOutput }: { filePath: string, onOutput: () => void }) {
-  const executeCode = useExecuteCode();
-  const [isRunning, setIsRunning] = useState(false);
-
-  const handleRun = async () => {
-    if (isRunning) return;
-    setIsRunning(true);
-    onOutput();
-    
-    const terminalNode = document.getElementById('terminal-output');
-    if (terminalNode) {
-      terminalNode.innerHTML = `<div class="text-muted-foreground animate-pulse">&gt; node ${filePath}...</div>`;
-    }
-
-    try {
-      const result = await executeCode.mutateAsync({ data: { filePath } });
-      
-      if (terminalNode) {
-        const exitColor = result.exitCode === 0 ? 'text-primary' : 'text-destructive';
-        terminalNode.innerHTML = `
-          <div class="text-muted-foreground mb-2">&gt; node ${filePath}</div>
-          ${result.stdout ? `<div class="whitespace-pre-wrap mb-1 text-foreground">${escapeHtml(result.stdout)}</div>` : ''}
-          ${result.stderr ? `<div class="whitespace-pre-wrap mb-1 text-destructive">${escapeHtml(result.stderr)}</div>` : ''}
-          <div class="mt-2 text-[11px] ${exitColor}">[Process exited with code ${result.exitCode} in ${result.durationMs}ms]</div>
-        `;
-      }
-    } catch (error: any) {
-      if (terminalNode) {
-        terminalNode.innerHTML = `
-          <div class="text-muted-foreground mb-2">&gt; node ${filePath}</div>
-          <div class="whitespace-pre-wrap text-destructive">Error executing code: ${error.message || 'Unknown error'}</div>
-        `;
-      }
-    } finally {
-      setIsRunning(false);
-    }
+function RunButton({ filePath, onRun }: { filePath: string; onRun: (cmd: string) => void }) {
+  const handleRun = () => {
+    // Send "node <file>\n" (or "npx ts-node <file>\n" for .ts) into the bash terminal
+    const cmd = filePath.endsWith('.ts')
+      ? `npx ts-node ${filePath}\n`
+      : `node ${filePath}\n`;
+    onRun(cmd);
   };
 
   return (
     <button
       onClick={handleRun}
-      disabled={isRunning}
-      className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-bold transition-colors shadow-sm
-        ${isRunning ? 'bg-muted text-muted-foreground cursor-wait' : 'bg-primary text-primary-foreground hover:bg-primary/90'}`}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-bold transition-colors shadow-sm bg-primary text-primary-foreground hover:bg-primary/90"
     >
-      <Play size={14} className={isRunning ? 'animate-pulse' : ''} fill="currentColor" />
+      <Play size={14} fill="currentColor" />
       <span>Run</span>
     </button>
   );
@@ -545,11 +522,3 @@ function KeyboardToolbar() {
   );
 }
 
-function escapeHtml(unsafe: string) {
-    return unsafe
-         .replace(/&/g, "&amp;")
-         .replace(/</g, "&lt;")
-         .replace(/>/g, "&gt;")
-         .replace(/"/g, "&quot;")
-         .replace(/'/g, "&#039;");
-}

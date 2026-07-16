@@ -72,6 +72,15 @@ export default defineConfig({
     fs: {
       strict: true,
     },
+    proxy: {
+      // Proxy WebSocket terminal connections through Vite so the Replit
+      // shared proxy doesn't have to forward WS upgrades across artifact paths.
+      '/terminal': {
+        target: 'http://localhost:8080',
+        ws: true,
+        changeOrigin: true,
+      },
+    },
   },
   preview: {
     port,
