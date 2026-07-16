@@ -3,20 +3,23 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Node.js IDE API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: files
+    description: File management
+  - name: execute
+    description: Code execution
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +27,154 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /files:
+    get:
+      operationId: listFiles
+      tags: [files]
+      summary: List all files (flat list with paths)
+      responses:
+        "200":
+          description: File list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FileEntry"
+    post:
+      operationId: createFile
+      tags: [files]
+      summary: Create a new file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FileInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileEntry"
+        "409":
+          description: File already exists
+
+  /files/{filePath}:
+    get:
+      operationId: readFile
+      tags: [files]
+      summary: Read file content
+      parameters:
+        - name: filePath
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: File content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileContent"
+        "404":
+          description: Not found
+    put:
+      operationId: updateFile
+      tags: [files]
+      summary: Update file content
+      parameters:
+        - name: filePath
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FileUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileEntry"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteFile
+      tags: [files]
+      summary: Delete a file
+      parameters:
+        - name: filePath
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteResult"
+        "404":
+          description: Not found
+
+  /files/{filePath}/rename:
+    post:
+      operationId: renameFile
+      tags: [files]
+      summary: Rename or move a file
+      parameters:
+        - name: filePath
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenameInput"
+      responses:
+        "200":
+          description: Renamed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileEntry"
+        "404":
+          description: Not found
+        "409":
+          description: Destination already exists
+
+  /execute:
+    post:
+      operationId: executeCode
+      tags: [execute]
+      summary: Execute a Node.js file and return output
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExecuteInput"
+      responses:
+        "200":
+          description: Execution result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExecuteResult"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +185,103 @@ components:
       required:
         - status
 
+    FileEntry:
+      type: object
+      properties:
+        path:
+          type: string
+          description: Relative file path (e.g. "src/index.js")
+        name:
+          type: string
+          description: File name
+        size:
+          type: integer
+          description: File size in bytes
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - path
+        - name
+        - size
+        - updatedAt
+
+    FileContent:
+      type: object
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+      required:
+        - path
+        - content
+
+    FileInput:
+      type: object
+      properties:
+        path:
+          type: string
+          description: Relative path for the new file (e.g. "hello.js")
+        content:
+          type: string
+          description: Initial content
+      required:
+        - path
+
+    FileUpdate:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+        - content
+
+    RenameInput:
+      type: object
+      properties:
+        newPath:
+          type: string
+          description: New relative path
+      required:
+        - newPath
+
+    DeleteResult:
+      type: object
+      properties:
+        path:
+          type: string
+        deleted:
+          type: boolean
+      required:
+        - path
+        - deleted
+
+    ExecuteInput:
+      type: object
+      properties:
+        filePath:
+          type: string
+          description: Path of file to run
+        stdin:
+          type: string
+          description: Optional stdin input
+      required:
+        - filePath
+
+    ExecuteResult:
+      type: object
+      properties:
+        stdout:
+          type: string
+        stderr:
+          type: string
+        exitCode:
+          type: integer
+        durationMs:
+          type: integer
+      required:
+        - stdout
+        - stderr
+        - exitCode
+        - durationMs
