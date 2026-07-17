@@ -13,11 +13,19 @@ interface XTerminalProps {
 }
 
 function buildWsUrl(): string {
-  // Connect via Vite's proxy: /terminal → api-server:8080/terminal
-  // This avoids routing through the Replit shared proxy's artifact path splitting,
-  // which does not forward WebSocket upgrades for /api/* subpaths.
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${window.location.host}/terminal`;
+  const host = window.location.host;
+
+  if (import.meta.env.PROD) {
+    // Production: node-ide serves static files (no Vite dev server / no Vite proxy).
+    // Replit's production nginx proxy DOES forward WebSocket upgrades for /api/* paths
+    // to the api-server at port 8080, so connect directly to /api/terminal.
+    return `${protocol}//${host}/api/terminal`;
+  }
+
+  // Development: Replit's dev proxy does NOT forward WS upgrades for /api/* subpaths
+  // (returns 502). Work around via Vite's own proxy: /terminal → localhost:8080/terminal.
+  return `${protocol}//${host}/terminal`;
 }
 
 const XTerminal = forwardRef<XTerminalHandle, XTerminalProps>(
