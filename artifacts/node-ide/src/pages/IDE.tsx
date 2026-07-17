@@ -3,14 +3,16 @@ import CodeMirror from '@uiw/react-codemirror';
 import { javascript } from '@codemirror/lang-javascript';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { createTsExtensions } from '@/lib/tsIntellisense';
-import { Play, Trash2, Edit2, Terminal, Menu, X, File as FileIcon, FilePlus, Check } from 'lucide-react';
+import { Play, Trash2, Edit2, Terminal, Menu, X, File as FileIcon, FilePlus, Check, GitBranch } from 'lucide-react';
 import { useListFiles, getListFilesQueryKey, useReadFile, getReadFileQueryKey, useCreateFile, useUpdateFile, useDeleteFile, useRenameFile } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import XTerminal, { type XTerminalHandle } from '@/components/XTerminal';
+import { GitPanel } from '@/components/GitPanel';
 
 export function IDE() {
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarTab, setSidebarTab] = useState<'files' | 'git'>('files');
   const [terminalHeight, setTerminalHeight] = useState(240);
   const [isTerminalVisible, setIsTerminalVisible] = useState(true);
   const terminalRef = useRef<XTerminalHandle>(null);
@@ -78,30 +80,62 @@ export function IDE() {
         >
           {sidebarOpen && (
             <>
-              <div className="h-10 px-3 flex items-center justify-between border-b border-border shrink-0 select-none">
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Explorer</span>
-                <CreateFileButton onSuccess={handleFileSelect} />
-              </div>
-              <div className="flex-1 overflow-y-auto py-2">
-                {loadingFiles ? (
-                  <div className="px-4 py-2 text-xs text-muted-foreground">Loading...</div>
-                ) : sortedFiles.length === 0 ? (
-                  <div className="px-4 py-4 text-center">
-                    <p className="text-xs text-muted-foreground mb-3">No files found.</p>
-                    <CreateFileButton onSuccess={handleFileSelect} className="mx-auto border border-border px-3 py-1.5 rounded text-xs hover:bg-secondary flex items-center gap-2" text="Create File" />
+              {/* Tab switcher */}
+              <div className="h-10 flex items-stretch border-b border-border shrink-0 select-none">
+                <button
+                  onClick={() => setSidebarTab('files')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold transition-colors
+                    ${sidebarTab === 'files'
+                      ? 'text-foreground border-b-2 border-primary bg-secondary/30'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary/20'}`}
+                >
+                  <FileIcon size={13} />
+                  Files
+                </button>
+                <button
+                  onClick={() => setSidebarTab('git')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold transition-colors
+                    ${sidebarTab === 'git'
+                      ? 'text-foreground border-b-2 border-primary bg-secondary/30'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary/20'}`}
+                >
+                  <GitBranch size={13} />
+                  Git
+                </button>
+                {sidebarTab === 'files' && (
+                  <div className="flex items-center pr-2">
+                    <CreateFileButton onSuccess={handleFileSelect} />
                   </div>
-                ) : (
-                  sortedFiles.map(file => (
-                    <FileItem 
-                      key={file.path} 
-                      file={file} 
-                      isActive={activeFile === file.path}
-                      onClick={() => handleFileSelect(file.path)}
-                      onDelete={() => activeFile === file.path && setActiveFile(null)}
-                    />
-                  ))
                 )}
               </div>
+
+              {/* Tab content */}
+              {sidebarTab === 'files' ? (
+                <div className="flex-1 overflow-y-auto py-2">
+                  {loadingFiles ? (
+                    <div className="px-4 py-2 text-xs text-muted-foreground">Loading...</div>
+                  ) : sortedFiles.length === 0 ? (
+                    <div className="px-4 py-4 text-center">
+                      <p className="text-xs text-muted-foreground mb-3">No files found.</p>
+                      <CreateFileButton onSuccess={handleFileSelect} className="mx-auto border border-border px-3 py-1.5 rounded text-xs hover:bg-secondary flex items-center gap-2" text="Create File" />
+                    </div>
+                  ) : (
+                    sortedFiles.map(file => (
+                      <FileItem 
+                        key={file.path} 
+                        file={file} 
+                        isActive={activeFile === file.path}
+                        onClick={() => handleFileSelect(file.path)}
+                        onDelete={() => activeFile === file.path && setActiveFile(null)}
+                      />
+                    ))
+                  )}
+                </div>
+              ) : (
+                <div className="flex-1 overflow-hidden">
+                  <GitPanel />
+                </div>
+              )}
             </>
           )}
         </div>

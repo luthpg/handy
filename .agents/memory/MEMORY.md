@@ -1,0 +1,2 @@
+- [WebSocket Terminal Proxy](ws-terminal-proxy.md) — Replit proxy doesn't forward WS upgrades for /api/* subpaths; solved via Vite proxy /terminal → api-server:8080
+- [Git + Auth + Neon Architecture](git-auth-neon.md) — Git via simple-git, GitHub OAuth + PAT, Neon via DATABASE_URL (auto-initialises; in-memory fallback if not set)

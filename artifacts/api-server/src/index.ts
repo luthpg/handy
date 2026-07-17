@@ -2,6 +2,7 @@ import http from "http";
 import app from "./app";
 import { logger } from "./lib/logger";
 import { createTerminalWss, attachTerminalUpgrade } from "./lib/ptyTerminal";
+import { initDb } from "./lib/db";
 
 const rawPort = process.env["PORT"];
 
@@ -22,6 +23,9 @@ const server = http.createServer(app);
 // Attach WebSocket terminal
 const terminalWss = createTerminalWss();
 attachTerminalUpgrade(server, terminalWss);
+
+// Init database (non-blocking — app starts even if DB is unavailable)
+initDb().catch((err) => logger.error({ err }, "DB init error"));
 
 server.listen(port, (err?: Error) => {
   if (err) {
