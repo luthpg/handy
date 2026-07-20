@@ -34,6 +34,13 @@ const XTerminal = forwardRef<XTerminalHandle, XTerminalProps>(
     const termRef = useRef<Terminal | null>(null);
     const wsRef = useRef<WebSocket | null>(null);
     const fitRef = useRef<FitAddon | null>(null);
+    const [viewportStyle, setViewportStyle] = useState<React.CSSProperties>({
+      position: "fixed",
+      left: 0,
+      bottom: 0,
+      width: "100%",
+      height: "30dvh", // デフォルトの高さ（キーボード非表示時）
+    });
 
     // Expose send() to parent
     useImperativeHandle(ref, () => ({
@@ -152,12 +159,46 @@ const XTerminal = forwardRef<XTerminalHandle, XTerminalProps>(
       });
       if (containerRef.current) ro.observe(containerRef.current);
 
+      const visualViewport = window.visualViewport;
+      if (visualViewport) {
+        // iOSのキーボード表示・非表示、および画面ズームに対応するハンドラ
+        const handleViewportChange = () => {
+        // 1. 実際に目に見えている領域の高さ
+        const height = visualViewport.height;
+        // 2. キーボード出現などによって押し上げられたスクロール量（オフセット）
+        const offsetTop = visualViewport.offsetTop;
+
+        // ターミナル全体の高さを画面の「下部30%〜40%」等に固定したい場合の計算例
+        // キーボード表示時は、目に見えている有効領域（height）を基準に高さを算出します
+        const desiredHeight = Math.floor(height * 0.35); 
+
+        // iOS Safari特有のバグを防ぐため、固定位置（top）を変化したoffsetTopに追随させ、
+        // 画面最下部にぴったり張り付くように位置と高さを動的に書き換えます
+        setViewportStyle({
+          position: "fixed",
+          left: `${visualViewport.offsetLeft}px`,
+          top: `${offsetTop + height - desiredHeight}px`,
+          width: `${visualViewport.width}px`,
+          height: `${desiredHeight}px`,
+          zIndex: 50,
+        });
+      };
+
+      // resize と scroll の両方を監視するのがiOSでは必須です
+      visualViewport.addEventListener("resize", handleViewportChange);
+      visualViewport.addEventListener("scroll", handleViewportChange);
+
+      // 初回実行
+      handleViewportChange();
+
       return () => {
         ro.disconnect();
         wsRef.current?.close();
         term.dispose();
         termRef.current = null;
         fitRef.current = null;
+        visualViewport.removeEventListener("resize", handleViewportChange);
+        visualViewport.removeEventListener("scroll", handleViewportChange);
       };
     }, []);
 
@@ -165,7 +206,7 @@ const XTerminal = forwardRef<XTerminalHandle, XTerminalProps>(
       <div
         ref={containerRef}
         className={className}
-        style={{ width: "100%", height: "100%" }}
+        style={viewportStyle}
       />
     );
   },
