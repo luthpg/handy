@@ -11,7 +11,7 @@ app = "node-ide-api"          # Change to your Fly app name
 primary_region = "nrt"        # Tokyo — change to your preferred region
 
 [build]
-  dockerfile = "artifacts/api-server/Dockerfile"
+  dockerfile = "Dockerfile"
 
 [http_service]
   internal_port = 8080
