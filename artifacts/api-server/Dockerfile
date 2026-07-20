@@ -14,6 +14,7 @@ RUN npm install -g pnpm@10
 WORKDIR /app
 
 # ── Dependency layer ─────────────────────────────────────────────────────────
+cd ../..
 # Copy workspace manifests first for layer caching
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY lib/api-spec/package.json         ./lib/api-spec/
