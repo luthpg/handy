@@ -6,7 +6,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://handy.fly.dev/:path*"
+      "destination": "https://handy.fly.dev/api/:path*"
     }
   ],
   "headers": [
