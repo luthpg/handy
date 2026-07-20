@@ -14,20 +14,19 @@ RUN npm install -g pnpm@10
 WORKDIR /app
 
 # ── Dependency layer ─────────────────────────────────────────────────────────
-cd ../..
 # Copy workspace manifests first for layer caching
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY lib/api-spec/package.json         ./lib/api-spec/
-COPY lib/api-zod/package.json          ./lib/api-zod/
-COPY lib/api-client-react/package.json ./lib/api-client-react/
-COPY artifacts/api-server/package.json ./artifacts/api-server/
+COPY ./../../package.json ./../../pnpm-workspace.yaml ./../../pnpm-lock.yaml ./
+COPY ./../../lib/api-spec/package.json         ./lib/api-spec/
+COPY ./../../lib/api-zod/package.json          ./lib/api-zod/
+COPY ./../../lib/api-client-react/package.json ./lib/api-client-react/
+COPY package.json ./artifacts/api-server/
 
 # Install all workspace deps (needed for build)
 RUN pnpm install --frozen-lockfile
 
 # ── Build layer ───────────────────────────────────────────────────────────────
-COPY lib/       ./lib/
-COPY artifacts/api-server/ ./artifacts/api-server/
+COPY ./../../lib/       ./lib/
+COPY ./../../artifacts/api-server/ ./artifacts/api-server/
 
 # Build the API server
 RUN pnpm --filter @workspace/api-server run build
