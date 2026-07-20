@@ -39,10 +39,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends git && \
 
 WORKDIR /app
 
-# Copy built output and node_modules (includes native binaries)
-COPY --from=base /app/artifacts/api-server/dist ./dist
-COPY --from=base /app/artifacts/api-server/node_modules ./node_modules
-COPY --from=base /app/node_modules ./root_node_modules
+# 階層構造と名前を完全に維持してコピーする
+# ルートの node_modules (実体が入っている場所) をそのままの階層でコピー
+COPY --from=base /app/node_modules ./node_modules
+COPY --from=base /app/package.json ./package.json
+
+# api-server の node_modules とビルド成果物を、本来のフォルダ階層のままコピー
+COPY --from=base /app/artifacts/api-server/node_modules ./artifacts/api-server/node_modules
+COPY --from=base /app/artifacts/api-server/dist         ./artifacts/api-server/dist
+COPY --from=base /app/artifacts/api-server/package.json ./artifacts/api-server/package.json
 
 # Create workspace directory
 RUN mkdir -p /app/user-workspace
@@ -55,4 +60,6 @@ EXPOSE 8080
 ENV PORT=8080 \
     NODE_ENV=production
 
+# 実行時のカレントディレクトリを api-server に移動し、そこから起動する
+WORKDIR /app/artifacts/api-server
 CMD ["node", "--enable-source-maps", "./dist/index.mjs"]
