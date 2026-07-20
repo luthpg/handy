@@ -6,7 +6,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     make \
     g++ \
-    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Install pnpm
@@ -35,7 +34,7 @@ RUN pnpm --filter @workspace/api-server run build
 # ── Runtime layer ─────────────────────────────────────────────────────────────
 FROM node:22-slim AS runtime
 
-RUN apt-get update && apt-get install -y --no-install-recommends git && \
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
