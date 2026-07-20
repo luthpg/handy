@@ -1,0 +1,46 @@
+# Fly.io configuration for the Node.js IDE API server
+# Deploy with: fly deploy --config artifacts/api-server/fly.toml
+#
+# Required secrets (set via `fly secrets set`):
+#   SESSION_SECRET=<random-string>
+#   DATABASE_URL=<neon-postgres-connection-string>
+#   GITHUB_CLIENT_ID=<your-github-oauth-app-client-id>
+#   GITHUB_CLIENT_SECRET=<your-github-oauth-app-client-secret>
+
+app = "node-ide-api"          # Change to your Fly app name
+primary_region = "nrt"        # Tokyo — change to your preferred region
+
+[build]
+  dockerfile = "artifacts/api-server/Dockerfile"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+
+[mounts]
+  source = "user_workspace"
+  destination = "/app/user-workspace"
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 8080
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
