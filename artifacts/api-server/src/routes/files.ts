@@ -17,11 +17,15 @@ async function ensureWorkspaceDir() {
 }
 
 function safePath(filePath: string): string {
-  // Only allow simple filenames (no directory traversal)
-  if (!filePath || /[/\\]/.test(filePath) || filePath === ".." || filePath.startsWith(".")) {
+  if (!filePath) {
     throw new Error("Invalid path");
   }
-  return path.resolve(WORKSPACE_DIR, filePath);
+  const resolved = path.resolve(WORKSPACE_DIR, filePath);
+  // 解決された絶対パスが WORKSPACE_DIR の中にあることを保証（ディレクトリトラバーサル対策）
+  if (!resolved.startsWith(WORKSPACE_DIR + path.sep) && resolved !== WORKSPACE_DIR) {
+    throw new Error("Invalid path");
+  }
+  return resolved;
 }
 
 function toEntry(filePath: string, stat: Stats) {
@@ -33,34 +37,43 @@ function toEntry(filePath: string, stat: Stats) {
   };
 }
 
+// ディレクトリ階層を考慮して相対パスを含めたアセット一覧を返す
+async function getFilesRecursively(dir: string, baseDir: string): Promise<any[]> {
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+  const files: any[] = [];
+
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    const relativePath = path.relative(baseDir, fullPath);
+
+    if (entry.isFile()) {
+      const stat = await fs.stat(fullPath);
+      files.push({
+        path: relativePath,
+        name: entry.name,
+        size: Number(stat.size),
+        updatedAt: stat.mtime.toISOString(),
+      });
+    } else if (entry.isDirectory() && entry.name !== "node_modules" && !entry.name.startsWith(".")) {
+      // サブディレクトリ内も再帰的に走査（不要なシステムフォルダは除外）
+      const subFiles = await getFilesRecursively(fullPath, baseDir);
+      files.push(...subFiles);
+    }
+  }
+  return files;
+}
+
 // GET /files
 router.get("/files", async (_req, res) => {
   await ensureWorkspaceDir();
-
-  const entries = await fs.readdir(WORKSPACE_DIR).catch(() => [] as string[]);
-  if (entries.length === 0) {
-    const samplePath = path.join(WORKSPACE_DIR, "hello.js");
-    await fs.writeFile(
-      samplePath,
-      `// Hello from Node.js IDE!\nconsole.log("Hello, world!");\nconsole.log("Current time:", new Date().toISOString());\n`,
-    );
+  try {
+    const files = await getFilesRecursively(WORKSPACE_DIR, WORKSPACE_DIR);
+    res.json(files);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to read workspace" });
   }
-
-  const allEntries = await fs.readdir(WORKSPACE_DIR).catch(() => [] as string[]);
-  const files: Array<{ path: string; name: string; size: number; updatedAt: string }> = [];
-  for (const name of allEntries) {
-    const full = path.join(WORKSPACE_DIR, name);
-    try {
-      const stat = await fs.stat(full);
-      if (stat.isFile()) {
-        files.push(toEntry(full, stat));
-      }
-    } catch {
-      // skip
-    }
-  }
-  res.json(files);
 });
+
 
 // POST /files
 router.post("/files", async (req, res) => {
