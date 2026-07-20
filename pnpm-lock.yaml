@@ -160,13 +160,13 @@ importers:
       '@replit/connectors-sdk':
         specifier: ^0.4.1
         version: 0.4.1
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
     devDependencies:
       prettier:
         specifier: ^3.9.5
         version: 3.9.5
-      typescript:
-        specifier: ~5.9.3
-        version: 5.9.3
 
   artifacts/api-server:
     dependencies:

@@ -13,10 +13,11 @@
     "onlyBuiltDependencies": ["node-pty", "node-pty-prebuilt-multiarch"]
   },
   "dependencies": {
-    "@replit/connectors-sdk": "^0.4.1"
+    "@replit/connectors-sdk": "^0.4.1",
+    "typescript": "~5.9.3"
   },
   "devDependencies": {
-    "prettier": "^3.9.5",
-    "typescript": "~5.9.3"
+    "prettier": "^3.9.5"
   }
 }
+

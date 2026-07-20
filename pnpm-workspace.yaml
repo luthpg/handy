@@ -4,6 +4,10 @@ packages:
   - lib/integrations/*
   - scripts
 
+allowBuilds:
+  esbuild: true
+  node-pty-prebuilt-multiarch: true
+
 autoInstallPeers: false
 
 catalog:
