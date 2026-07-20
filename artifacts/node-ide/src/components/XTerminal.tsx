@@ -13,20 +13,20 @@ interface XTerminalProps {
 }
 
 function buildWsUrl(): string {
-  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const host = window.location.host;
-
-  if (import.meta.env.PROD) {
-    // Production: node-ide serves static files (no Vite dev server / no Vite proxy).
-    // Replit's production nginx proxy DOES forward WebSocket upgrades for /api/* paths
-    // to the api-server at port 8080, so connect directly to /api/terminal.
-    return `${protocol}//${host}/api/terminal`;
+  // 開発環境 (ローカル / Replit) の場合
+  if (!import.meta.env.PROD) {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const host = window.location.host;
+    return `${protocol}//${host}/terminal`;
   }
 
-  // Development: Replit's dev proxy does NOT forward WS upgrades for /api/* subpaths
-  // (returns 502). Work around via Vite's own proxy: /terminal → localhost:8080/terminal.
-  return `${protocol}//${host}/terminal`;
+  // 本番環境 (Vercel) の場合：環境変数から Fly.io の wss:// URL を取得する
+  const backendWsUrl = import.meta.env.VITE_WS_URL || "wss://handy.fly.dev";
+
+  // バックエンドの待受パス `/terminal` に合わせる
+  return `${backendWsUrl}/terminal`;
 }
+
 
 const XTerminal = forwardRef<XTerminalHandle, XTerminalProps>(
   ({ className }, ref) => {
